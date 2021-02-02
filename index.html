@@ -2,6 +2,16 @@
 <html>
    <body>
     <canvas id="c" style="border:1px solid grey;width:100%;"></canvas>
+    <div id="uiContainer">
+        <div id="ui">
+          <div id="x">
+              <input value=0 min=0 max=100 id="xrange" type="range" />
+          </div>
+          <div id="y">
+            <input value=0 min=0 max=100 id="yrange" type="range" />
+          </div>
+        </div>
+    </div>
     <script id="vertex-shader-2d" type="notjs">
  
         attribute vec2 a_position;
@@ -48,44 +58,86 @@
              console.log('no webgl support');
          }
 
-        let program = setup(gl).program;
-        main(gl);
+        let mainObj = setup(gl),
+        program = mainObj.program,
+        positionAttributeLocation = mainObj.positionAttributeLocation;
+
+
+  // Create a buffer to put positions in
+  var positionBuffer = gl.createBuffer();
+
+  // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+  var translation = [0, 0];
+  var width = 100;
+  var height = 30;
+  var color = [Math.random(), Math.random(), Math.random(), 1];
+
+  drawScene(gl,mainObj);
+
+  main(gl,mainObj);
 
 
 
-function main(gl){
-    drawRectangles(gl);
+function main(gl,mainObj){
+    let xrange = document.getElementById('xrange');
+    let yrange = document.getElementById('yrange');
+    xrange.oninput = updatePosition(0,gl,mainObj);
+    yrange.oninput = updatePosition(1,gl,mainObj);
+    //drawRectangles(gl);
+}
+
+function updatePosition(index,gl,mainObj) {
+    return function(event) {
+      translation[index] = parseInt(event.target.value);
+      drawScene(gl,mainObj);
+    };
 }
 
 
+  // Draw a the scene.
+  function drawScene(gl, {positionAttributeLocation, resolutionUniformLocation, colorUniformLocation}) { 
 
-
-
-
-
-function drawRectangles(g){
-    var colorUniformLocation = gl.getUniformLocation(program, "u_color");
-    // draw 50 random rectangles in random colors
-    for (var ii = 0; ii < 50; ++ii) {
-    // Setup a random rectangle
-    // This will write to positionBuffer because
-    // its the last thing we bound on the ARRAY_BUFFER
-    // bind point
-    setRectangle(
-        gl, randomInt(600), randomInt(600), randomInt(300), randomInt(300));
-
-    // Set a random color.
-    gl.uniform4f(colorUniformLocation, Math.random(), Math.random(), Math.random(), 1);
-
+    // Tell WebGL how to convert from clip space to pixels
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+ 
+    // Clear the canvas.
+    gl.clear(gl.COLOR_BUFFER_BIT);
+ 
+    // Tell it to use our program (pair of shaders)
+    gl.useProgram(program);
+ 
+    // Turn on the attribute
+    gl.enableVertexAttribArray(positionAttributeLocation);
+ 
+    // Bind the position buffer.
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+ 
+    // Setup a rectangle
+    setRectangle(gl, translation[0], translation[1], width, height);
+ 
+    // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
+    var size = 2;          // 2 components per iteration
+    var type = gl.FLOAT;   // the data is 32bit floats
+    var normalize = false; // don't normalize the data
+    var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
+    var offset = 0;        // start at the beginning of the buffer
+    gl.vertexAttribPointer(
+        positionAttributeLocation, size, type, normalize, stride, offset)
+ 
+    // set the resolution
+    gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
+ 
+    // set the color
+    gl.uniform4fv(colorUniformLocation, color);
+ 
     // Draw the rectangle.
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-    }
-}
-
-// Returns a random integer from 0 to range - 1.
-function randomInt(range) {
-  return Math.floor(Math.random() * range);
-}
+    var primitiveType = gl.TRIANGLES;
+    var offset = 0;
+    var count = 6;
+    gl.drawArrays(primitiveType, offset, count);
+  }
  
 // Fills the buffer with the values that define a rectangle.
 function setRectangle(gl, x, y, width, height) {
@@ -118,7 +170,8 @@ function setup(gl) {
         program = createProgram(gl, vertexShader, fragmentShader),
         positionAttributeLocation = gl.getAttribLocation(program, "a_position"),
         positionBuffer = gl.createBuffer(),
-        resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution");
+        resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution"),
+        colorUniformLocation = gl.getUniformLocation(program, "u_color");
 
         /* webglUtils. */
         resizeCanvasToDisplaySize(gl.canvas);
@@ -149,7 +202,7 @@ function setup(gl) {
         gl.vertexAttribPointer(
             positionAttributeLocation, size, type, normalize, stride, offset);
 
-        return {program};
+        return {program, positionAttributeLocation, resolutionUniformLocation, colorUniformLocation};
 
 }
 
