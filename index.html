@@ -10,27 +10,39 @@
           <div id="y">
             <input value=0 min=0 max=100 id="yrange" type="range" />
           </div>
+          <div id="rotation">
+
+          </div>
         </div>
     </div>
     <script id="vertex-shader-2d" type="notjs">
- 
         attribute vec2 a_position;
  
         uniform vec2 u_resolution;
-       
+        uniform vec2 u_translation;
+        uniform vec2 u_rotation;
+
+
         void main() {
-          // convert the position from pixels to 0.0 to 1.0
-          vec2 zeroToOne = a_position / u_resolution;
-       
-          // convert from 0->1 to 0->2
-          vec2 zeroToTwo = zeroToOne * 2.0;
-       
-          // convert from 0->2 to -1->+1 (clip space)
-          vec2 clipSpace = zeroToTwo - 1.0;
-       
-          gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
-        }
-       
+            // Rotate the position
+            vec2 rotatedPosition = vec2(
+               a_position.x * u_rotation.y + a_position.y * u_rotation.x,
+               a_position.y * u_rotation.y - a_position.x * u_rotation.x);
+          
+            // Add in the translation.
+            vec2 position = rotatedPosition + u_translation;
+          
+            // convert the position from pixels to 0.0 to 1.0
+            vec2 zeroToOne = position / u_resolution;
+          
+            // convert from 0->1 to 0->2
+            vec2 zeroToTwo = zeroToOne * 2.0;
+          
+            // convert from 0->2 to -1->+1 (clipspace)
+            vec2 clipSpace = zeroToTwo - 1.0;
+          
+            gl_Position = vec4(clipSpace * vec2(1, -1), 0, 1);
+          }
     </script>
     <script id="fragment-shader-2d" type="notjs">
     
@@ -70,6 +82,7 @@
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
   var translation = [0, 0];
+  var rotation = [1, 0];
   var width = 100;
   var height = 30;
   var color = [Math.random(), Math.random(), Math.random(), 1];
@@ -97,7 +110,7 @@ function updatePosition(index,gl,mainObj) {
 
 
   // Draw a the scene.
-  function drawScene(gl, {positionAttributeLocation, resolutionUniformLocation, colorUniformLocation}) { 
+  function drawScene(gl, {positionAttributeLocation, resolutionUniformLocation, colorUniformLocation, translationLocation, rotationLocation}) { 
 
     // Tell WebGL how to convert from clip space to pixels
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -131,6 +144,12 @@ function updatePosition(index,gl,mainObj) {
  
     // set the color
     gl.uniform4fv(colorUniformLocation, color);
+
+    // Set the translation.
+    gl.uniform2fv(translationLocation, translation);
+
+    // Set the rotation.
+    gl.uniform2fv(rotationLocation, rotation);
  
     // Draw the rectangle.
     var primitiveType = gl.TRIANGLES;
@@ -171,7 +190,9 @@ function setup(gl) {
         positionAttributeLocation = gl.getAttribLocation(program, "a_position"),
         positionBuffer = gl.createBuffer(),
         resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution"),
-        colorUniformLocation = gl.getUniformLocation(program, "u_color");
+        colorUniformLocation = gl.getUniformLocation(program, "u_color"),
+        translationLocation = gl.getUniformLocation(program, "u_translation"),
+        rotationLocation = gl.getUniformLocation(program, "u_rotation");
 
         /* webglUtils. */
         resizeCanvasToDisplaySize(gl.canvas);
@@ -202,7 +223,7 @@ function setup(gl) {
         gl.vertexAttribPointer(
             positionAttributeLocation, size, type, normalize, stride, offset);
 
-        return {program, positionAttributeLocation, resolutionUniformLocation, colorUniformLocation};
+        return {program, positionAttributeLocation, resolutionUniformLocation, colorUniformLocation, translationLocation, rotationLocation};
 
 }
 
