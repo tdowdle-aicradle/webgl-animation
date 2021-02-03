@@ -4,16 +4,8 @@
     <canvas id="c" style="border:1px solid grey;width:100%;"></canvas>
     <div id="uiContainer">
         <div id="ui">
-          <div id="x">
-              <span>x</span>
-              <input value=0 min=-200 max=200 id="xrange" type="range" />
-          </div>
-          <div id="y">
-            <span>y</span>
-            <input value=0 min=-200 max=200 id="yrange" type="range" />
-          </div>
-          <div id="angle">
-            <span>angle</span><input value=0 step=.5 min=0 max=360 id="anglerange" type="range" />
+          <div id="seek">
+            <span>seek</span><input value=0 step=1 min=0 max=249 id="seekrange" type="range" />
           </div>
         </div>
     </div>
@@ -93,6 +85,7 @@
   var width = 70;
   var height = 30;
   var color = [Math.random(), Math.random(), Math.random(), 1];
+  let seekrange = document.getElementById('seekrange');
 
   // Setup a rectangle
   setRectangle(gl, translation[0], translation[1], width, height);
@@ -109,6 +102,7 @@
         intervalThing = setInterval(()=>{
             subscriber.next(objWithinEvent2[eventLocation]);
             eventLocation += 1;
+            seekrange.value = eventLocation;
             if(!objWithinEvent2[eventLocation]){
                 console.log('done');
                 clearInterval(intervalThing);
@@ -133,27 +127,19 @@
   });
  */
   
-
-
-
-
-
-
 function main(gl,mainObj){
-    let xrange = document.getElementById('xrange');
-    let yrange = document.getElementById('yrange');
-    let rxrange = document.getElementById('anglerange');
-    xrange.oninput = updatePosition(0,gl,mainObj);
-    yrange.oninput = updatePosition(1,gl,mainObj);
-
-    anglerange.oninput = test(gl,mainObj);
-    //drawRectangles(gl);
+    seekrange.onchange = test(gl,mainObj);
 }
 
 function test(gl,mainObj) {
     return function(event) {
-        rotation = printSineAndCosineForAnAngle(parseFloat(event.target.value));
-        drawScene(gl,mainObj);
+        thing.unsubscribe();
+        eventLocation = parseInt(event.target.value);
+        thing = yup.subscribe((thing)=>{
+            translation = thing.translation;
+            rotation = thing.rotation;
+            drawScene(gl,mainObj);
+        });
     }
 }
 
