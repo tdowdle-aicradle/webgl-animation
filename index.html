@@ -142,20 +142,7 @@
       translation = [];
 
   */
-   let UniqueObjWithinEvent = [
-       {
-           timestamp:'',
-           rotation: [],
-           translation: [1,0]
-       },
-       {
-            timestamp:'',
-            rotation: [],
-            translation: [2,0]
-       },
-       {},
-       {},
-   ];
+   let UniqueObjWithinEvent = [];
 
    let angle = 360;
 
@@ -184,17 +171,19 @@
                 tThing[1] += 1.5;
             }
             rThing = printSineAndCosineForAnAngle(angle);
-            subscriber.next({translation:tThing,rotation:rThing});
+            subscriber.next({translation:tThing,rotation:rThing,timestamp:null});
             counter += 1;
             if(counter >= 250){
                 console.log('done');
                 clearInterval(intervalThing);
                 subscriber.complete();
+                console.log(UniqueObjWithinEvent);
             }
         },20);
     });
 
     let thing = yup.subscribe((thing)=>{
+        UniqueObjWithinEvent.push(thing);
         translation = thing.translation;
         rotation = thing.rotation;
         drawScene(gl,mainObj);
