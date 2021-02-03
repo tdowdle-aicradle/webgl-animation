@@ -10,14 +10,14 @@
           </div>
           <div id="y">
             <span>y</span>
-            <input value=100 min=-200 max=200 id="yrange" type="range" />
+            <input value=0 min=-200 max=200 id="yrange" type="range" />
           </div>
           <div id="angle">
             <span>angle</span><input value=0 step=.5 min=0 max=360 id="anglerange" type="range" />
           </div>
         </div>
     </div>
-    <script src="https://unpkg.com/rxjs/bundles/rxjs.umd.min.js"></script>
+    <script src="./rxjs.min.js"></script>
     <script id="vertex-shader-2d" type="notjs">
         attribute vec2 a_position;
  
@@ -89,7 +89,7 @@
 
 
 
-  var width = 100;
+  var width = 70;
   var height = 30;
   var color = [Math.random(), Math.random(), Math.random(), 1];
 
@@ -99,6 +99,118 @@
   drawScene(gl,mainObj);
 
   main(gl,mainObj);
+
+  /* 
+  
+    import { Observable } from 'rxjs';
+ 
+    const observable = new Observable(subscriber => {
+    subscriber.next(1);
+    subscriber.next(2);
+    subscriber.next(3);
+    setTimeout(() => {
+        subscriber.next(4);
+        subscriber.complete();
+    }, 1000);
+    });
+    
+    console.log('just before subscribe');
+    observable.subscribe({
+    next(x) { console.log('got value ' + x); },
+    error(err) { console.error('something wrong occurred: ' + err); },
+    complete() { console.log('done'); }
+    });
+    console.log('just after subscribe');
+
+  */
+
+  //Live view - replay subject
+  //Event - could be an observable playback thing
+
+  /*
+
+      console.log(event.target.value);
+      translation[index] = parseInt(event.target.value);
+      drawScene(gl,mainObj);
+
+      /////
+
+      rotation = printSineAndCosineForAnAngle(parseFloat(event.target.value));
+      drawScene(gl,mainObj);
+
+      rotation = [];
+      translation = [];
+
+  */
+   let UniqueObjWithinEvent = [
+       {
+           timestamp:'',
+           rotation: [],
+           translation: [1,0]
+       },
+       {
+            timestamp:'',
+            rotation: [],
+            translation: [2,0]
+       },
+       {},
+       {},
+   ];
+
+   let angle = 360;
+
+    var yup =  new rxjs.Observable(subscriber => {
+      let counter = 0,
+        intervalThing = setInterval(()=>{
+            let tThing = translation;
+            let rThing;
+            if(counter < 80){
+                tThing[0] += 1.5;
+            }
+            else if(counter <= 100){
+                tThing[0] += (100-counter)*.07;
+            }
+            else if(counter > 100 && counter <= 145){
+                angle -= 1;
+                tThing[0] += .8;
+                tThing[1] += .5;
+            }
+            else if (counter <= 190){
+                angle -= 1;
+                tThing[0] += .2;
+                tThing[1] += .8;
+            }
+            else if (counter <= 250){
+                tThing[1] += 1.5;
+            }
+            rThing = printSineAndCosineForAnAngle(angle);
+            subscriber.next({translation:tThing,rotation:rThing});
+            counter += 1;
+            if(counter >= 250){
+                console.log('done');
+                clearInterval(intervalThing);
+                subscriber.complete();
+            }
+        },20);
+    });
+
+    let thing = yup.subscribe((thing)=>{
+        translation = thing.translation;
+        rotation = thing.rotation;
+        drawScene(gl,mainObj);
+    });
+
+/*     setTimeout(()=>{
+        thing.unsubscribe();
+    },1000); */
+
+
+/*   var yup = rxjs.of('test').subscribe((thing)=>{
+    console.log(thing);
+  });
+ */
+  
+
 
 
 
