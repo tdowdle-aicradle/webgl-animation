@@ -67,6 +67,7 @@
 		
     <script type="module">
         import {createProgram, createShader} from './web-gl.mjs';
+        import { objWithinEvent2 } from './events.mjs';
          var canvas = document.querySelector("#c");
          var gl = canvas.getContext("webgl");
          if (!gl) {
@@ -100,90 +101,23 @@
 
   main(gl,mainObj);
 
-  /* 
-  
-    import { Observable } from 'rxjs';
- 
-    const observable = new Observable(subscriber => {
-    subscriber.next(1);
-    subscriber.next(2);
-    subscriber.next(3);
-    setTimeout(() => {
-        subscriber.next(4);
-        subscriber.complete();
-    }, 1000);
-    });
-    
-    console.log('just before subscribe');
-    observable.subscribe({
-    next(x) { console.log('got value ' + x); },
-    error(err) { console.error('something wrong occurred: ' + err); },
-    complete() { console.log('done'); }
-    });
-    console.log('just after subscribe');
-
-  */
-
-  //Live view - replay subject
-  //Event - could be an observable playback thing
-
-  /*
-
-      console.log(event.target.value);
-      translation[index] = parseInt(event.target.value);
-      drawScene(gl,mainObj);
-
-      /////
-
-      rotation = printSineAndCosineForAnAngle(parseFloat(event.target.value));
-      drawScene(gl,mainObj);
-
-      rotation = [];
-      translation = [];
-
-  */
-   let UniqueObjWithinEvent = [];
-
    let angle = 360;
+   let eventLocation = 0;
 
     var yup =  new rxjs.Observable(subscriber => {
       let counter = 0,
         intervalThing = setInterval(()=>{
-            let tThing = translation;
-            let rThing;
-            if(counter < 80){
-                tThing[0] += 1.5;
-            }
-            else if(counter <= 100){
-                tThing[0] += (100-counter)*.07;
-            }
-            else if(counter > 100 && counter <= 145){
-                angle -= 1;
-                tThing[0] += .8;
-                tThing[1] += .5;
-            }
-            else if (counter <= 190){
-                angle -= 1;
-                tThing[0] += .2;
-                tThing[1] += .8;
-            }
-            else if (counter <= 250){
-                tThing[1] += 1.5;
-            }
-            rThing = printSineAndCosineForAnAngle(angle);
-            subscriber.next({translation:tThing,rotation:rThing,timestamp:null});
-            counter += 1;
-            if(counter >= 250){
+            subscriber.next(objWithinEvent2[eventLocation]);
+            eventLocation += 1;
+            if(!objWithinEvent2[eventLocation]){
                 console.log('done');
                 clearInterval(intervalThing);
                 subscriber.complete();
-                console.log(UniqueObjWithinEvent);
             }
         },20);
     });
 
     let thing = yup.subscribe((thing)=>{
-        UniqueObjWithinEvent.push(thing);
         translation = thing.translation;
         rotation = thing.rotation;
         drawScene(gl,mainObj);
