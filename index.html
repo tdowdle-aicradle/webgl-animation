@@ -5,16 +5,19 @@
     <div id="uiContainer">
         <div id="ui">
           <div id="x">
-              <input value=0 min=0 max=100 id="xrange" type="range" />
+              <span>x</span>
+              <input value=0 min=-200 max=200 id="xrange" type="range" />
           </div>
           <div id="y">
-            <input value=0 min=0 max=100 id="yrange" type="range" />
+            <span>y</span>
+            <input value=100 min=-200 max=200 id="yrange" type="range" />
           </div>
-          <div id="rotation">
-
+          <div id="angle">
+            <span>angle</span><input value=0 step=.5 min=0 max=360 id="anglerange" type="range" />
           </div>
         </div>
     </div>
+    <script src="https://unpkg.com/rxjs/bundles/rxjs.umd.min.js"></script>
     <script id="vertex-shader-2d" type="notjs">
         attribute vec2 a_position;
  
@@ -82,10 +85,16 @@
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
   var translation = [0, 0];
-  var rotation = [1, 0];
+  var rotation = [0, 1];
+
+
+
   var width = 100;
   var height = 30;
   var color = [Math.random(), Math.random(), Math.random(), 1];
+
+  // Setup a rectangle
+  setRectangle(gl, translation[0], translation[1], width, height);
 
   drawScene(gl,mainObj);
 
@@ -93,16 +102,34 @@
 
 
 
+
+
 function main(gl,mainObj){
     let xrange = document.getElementById('xrange');
     let yrange = document.getElementById('yrange');
+    let rxrange = document.getElementById('anglerange');
     xrange.oninput = updatePosition(0,gl,mainObj);
     yrange.oninput = updatePosition(1,gl,mainObj);
+
+    anglerange.oninput = test(gl,mainObj);
     //drawRectangles(gl);
+}
+
+function test(gl,mainObj) {
+    return function(event) {
+        rotation = printSineAndCosineForAnAngle(parseFloat(event.target.value));
+        drawScene(gl,mainObj);
+    }
+}
+
+function printSineAndCosineForAnAngle(angleInDegrees) {
+  var angleInRadians = angleInDegrees * Math.PI / 180;
+  return [Math.sin(angleInRadians), Math.cos(angleInRadians)];
 }
 
 function updatePosition(index,gl,mainObj) {
     return function(event) {
+      console.log(event.target.value);
       translation[index] = parseInt(event.target.value);
       drawScene(gl,mainObj);
     };
@@ -126,9 +153,6 @@ function updatePosition(index,gl,mainObj) {
  
     // Bind the position buffer.
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
- 
-    // Setup a rectangle
-    setRectangle(gl, translation[0], translation[1], width, height);
  
     // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
     var size = 2;          // 2 components per iteration
