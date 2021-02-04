@@ -58,7 +58,7 @@
     </script>
     <script type="module">
         import {createProgram, createShader} from './web-gl.mjs';
-        import { vehiclePath } from './events.mjs';
+        import { vehiclePath, vehiclePath2 } from './events.mjs';
          var canvas = document.querySelector("#c");
          var gl = canvas.getContext("webgl");
          if (!gl) {
@@ -81,8 +81,8 @@
             {
                 name: 'vehicle2',
                 buffer: gl.createBuffer(),
-                translation: [200, 30],
-                path: vehiclePath,
+                translation: [300, 35],
+                path: vehiclePath2,
                 rotation: [0, 1],
                 width: 70,
                 height: 30,
@@ -92,7 +92,7 @@
                 name: 'vehicle3',
                 buffer: gl.createBuffer(),
                 translation: [50, 200],
-                path: vehiclePath,
+                path: null,
                 rotation: [0, 1],
                 width: 70,
                 height: 30,
@@ -111,12 +111,9 @@ let eventLocation = 0;
    let counter = 0,
      intervalThing = setInterval(()=>{
          //eventLocation
-         subscriber.next(objects.reduce((retObj,obj)=>{
-            retObj.push(obj.path[eventLocation]);
-            return retObj;
-         },[]));
+         subscriber.next(objects.reduce(buildPositioning,[]));
          // TODO fix this
-         if(!vehiclePath[eventLocation]){
+         if(eventLocation > 300){
              console.log('done');
              clearInterval(intervalThing);
              subscriber.complete();
@@ -130,10 +127,22 @@ function main(gl,mainObj){
     seekrange.onchange = test(gl,mainObj);
     seekrange.oninput = function(event){
         thing.unsubscribe();
-        let location = parseInt(event.target.value);
-        let stamp = vehiclePath[location];
-        updatePositionAndDraw(objects[0],stamp);
+        eventLocation = parseInt(event.target.value);
+        let positions = objects.reduce(buildPositioning,[]);
+        updatePositionAndDraw(objects,positions);
     }
+}
+
+function buildPositioning(retObj,obj){
+    if(obj.path && obj.path[eventLocation]){
+        retObj.push(obj.path[eventLocation]);
+    } else {
+        retObj.push({
+            translation: obj.translation,
+            rotation: obj.rotation
+        })
+    }
+    return retObj;
 }
 
 function test(gl,mainObj) {
