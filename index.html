@@ -101,8 +101,6 @@
       let counter = 0,
         intervalThing = setInterval(()=>{
             subscriber.next(objWithinEvent2[eventLocation]);
-            eventLocation += 1;
-            seekrange.value = eventLocation;
             if(!objWithinEvent2[eventLocation]){
                 console.log('done');
                 clearInterval(intervalThing);
@@ -114,6 +112,8 @@
     let thing = yup.subscribe((thing)=>{
         translation = thing.translation;
         rotation = thing.rotation;
+        eventLocation += 1;
+        seekrange.value = eventLocation;
         drawScene(gl,mainObj);
     });
 
@@ -129,16 +129,28 @@
   
 function main(gl,mainObj){
     seekrange.onchange = test(gl,mainObj);
+    seekrange.oninput = function(event){
+        thing.unsubscribe();
+        let location = parseInt(event.target.value);
+        let stamp = objWithinEvent2[location];
+        translation = stamp.translation;
+        rotation = stamp.rotation;
+        drawScene(gl,mainObj);
+    }
 }
 
 function test(gl,mainObj) {
     return function(event) {
         thing.unsubscribe();
         eventLocation = parseInt(event.target.value);
-        thing = yup.subscribe((thing)=>{
-            translation = thing.translation;
-            rotation = thing.rotation;
-            drawScene(gl,mainObj);
+        thing = yup.subscribe((res)=>{
+            if(thing){
+                translation = res.translation;
+                rotation = res.rotation;
+                eventLocation += 1;
+                seekrange.value = eventLocation;
+                drawScene(gl,mainObj);
+            }
         });
     }
 }
