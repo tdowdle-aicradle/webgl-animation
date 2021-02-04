@@ -1,5 +1,5 @@
 
-export let objWithinEvent2 = 
+export let vehiclePath = 
 [
     {"translation":[1.5,0],"rotation":[-2.4492935982947064e-16,1],"timestamp":null},
     {"translation":[3,0],"rotation":[-2.4492935982947064e-16,1],"timestamp":null},

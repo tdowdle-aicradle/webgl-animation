@@ -56,86 +56,83 @@
     }
     
     </script>
-		
     <script type="module">
         import {createProgram, createShader} from './web-gl.mjs';
-        import { objWithinEvent2 } from './events.mjs';
+        import { vehiclePath } from './events.mjs';
          var canvas = document.querySelector("#c");
          var gl = canvas.getContext("webgl");
          if (!gl) {
              console.log('no webgl support');
          }
-
-        let mainObj = setup(gl),
-        program = mainObj.program,
-        positionAttributeLocation = mainObj.positionAttributeLocation;
+        let mainObj = setup(gl);
 
 
-  // Create a buffer to put positions in
-  var positionBuffer = gl.createBuffer();
-
-  // Bind it to ARRAY_BUFFER (think of it as ARRAY_BUFFER = positionBuffer)
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
-  var translation = [0, 0];
-  var rotation = [0, 1];
-
-
-
-  var width = 70;
-  var height = 30;
-  var color = [Math.random(), Math.random(), Math.random(), 1];
-  let seekrange = document.getElementById('seekrange');
-
-  // Setup a rectangle
-  setRectangle(gl, translation[0], translation[1], width, height);
-
-  drawScene(gl,mainObj);
-
-  main(gl,mainObj);
-
-   let angle = 360;
-   let eventLocation = 0;
-
-    var yup =  new rxjs.Observable(subscriber => {
-      let counter = 0,
-        intervalThing = setInterval(()=>{
-            subscriber.next(objWithinEvent2[eventLocation]);
-            if(!objWithinEvent2[eventLocation]){
-                console.log('done');
-                clearInterval(intervalThing);
-                subscriber.complete();
+        let objects = [
+            {
+                name: 'vehicle1',
+                buffer: gl.createBuffer(),
+                translation: [0, 0],
+                path: vehiclePath,
+                rotation: [0, 1],
+                width: 70,
+                height: 30,
+                color: [Math.random(), Math.random(), Math.random(), 1]
+            },
+            {
+                name: 'vehicle2',
+                buffer: gl.createBuffer(),
+                translation: [200, 30],
+                path: vehiclePath,
+                rotation: [0, 1],
+                width: 70,
+                height: 30,
+                color: [Math.random(), Math.random(), Math.random(), 1]
+            },
+            {
+                name: 'vehicle3',
+                buffer: gl.createBuffer(),
+                translation: [50, 200],
+                path: vehiclePath,
+                rotation: [0, 1],
+                width: 70,
+                height: 30,
+                color: [Math.random(), Math.random(), Math.random(), 1]
             }
-        },20);
-    });
+        ]
 
-    let thing = yup.subscribe((thing)=>{
-        translation = thing.translation;
-        rotation = thing.rotation;
-        eventLocation += 1;
-        seekrange.value = eventLocation;
-        drawScene(gl,mainObj);
-    });
-
-/*     setTimeout(()=>{
-        thing.unsubscribe();
-    },1000); */
+    drawScene(gl,mainObj);
 
 
-/*   var yup = rxjs.of('test').subscribe((thing)=>{
-    console.log(thing);
-  });
- */
-  
+    main(gl,mainObj);
+
+let eventLocation = 0;
+
+ var yup =  new rxjs.Observable(subscriber => {
+   let counter = 0,
+     intervalThing = setInterval(()=>{
+         //eventLocation
+         subscriber.next(objects.reduce((retObj,obj)=>{
+            retObj.push(obj.path[eventLocation]);
+            return retObj;
+         },[]));
+         // TODO fix this
+         if(!vehiclePath[eventLocation]){
+             console.log('done');
+             clearInterval(intervalThing);
+             subscriber.complete();
+         }
+     },20);
+ });
+
+ let thing = yup.subscribe(handleUpdateScene);
+
 function main(gl,mainObj){
     seekrange.onchange = test(gl,mainObj);
     seekrange.oninput = function(event){
         thing.unsubscribe();
         let location = parseInt(event.target.value);
-        let stamp = objWithinEvent2[location];
-        translation = stamp.translation;
-        rotation = stamp.rotation;
-        drawScene(gl,mainObj);
+        let stamp = vehiclePath[location];
+        updatePositionAndDraw(objects[0],stamp);
     }
 }
 
@@ -143,76 +140,63 @@ function test(gl,mainObj) {
     return function(event) {
         thing.unsubscribe();
         eventLocation = parseInt(event.target.value);
-        thing = yup.subscribe((res)=>{
-            if(thing){
-                translation = res.translation;
-                rotation = res.rotation;
-                eventLocation += 1;
-                seekrange.value = eventLocation;
-                drawScene(gl,mainObj);
-            }
-        });
+        thing = yup.subscribe(handleUpdateScene);
     }
 }
 
-function printSineAndCosineForAnAngle(angleInDegrees) {
-  var angleInRadians = angleInDegrees * Math.PI / 180;
-  return [Math.sin(angleInRadians), Math.cos(angleInRadians)];
+function updatePositionAndDraw(objects,values){
+    let i;
+    for(i=0;i<objects.length;i+=1){
+        objects[i].translation = values[i].translation;
+        objects[i].rotation = values[i].rotation;
+    }
+    drawScene(gl,mainObj);
 }
 
-function updatePosition(index,gl,mainObj) {
-    return function(event) {
-      console.log(event.target.value);
-      translation[index] = parseInt(event.target.value);
-      drawScene(gl,mainObj);
-    };
-}
-
+function handleUpdateScene(res){
+    if(res){
+        eventLocation += 1;
+        seekrange.value = eventLocation;
+        updatePositionAndDraw(objects,res);
+    }
+} 
 
   // Draw a the scene.
-  function drawScene(gl, {positionAttributeLocation, resolutionUniformLocation, colorUniformLocation, translationLocation, rotationLocation}) { 
+  function drawScene(gl, {positionAttributeLocation, resolutionUniformLocation, colorUniformLocation, translationLocation, rotationLocation, program}) {
+    let i;
 
-    // Tell WebGL how to convert from clip space to pixels
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
- 
-    // Clear the canvas.
-    gl.clear(gl.COLOR_BUFFER_BIT);
- 
-    // Tell it to use our program (pair of shaders)
-    gl.useProgram(program);
- 
-    // Turn on the attribute
-    gl.enableVertexAttribArray(positionAttributeLocation);
- 
-    // Bind the position buffer.
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
- 
-    // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
-    var size = 2;          // 2 components per iteration
-    var type = gl.FLOAT;   // the data is 32bit floats
-    var normalize = false; // don't normalize the data
-    var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
-    var offset = 0;        // start at the beginning of the buffer
-    gl.vertexAttribPointer(
-        positionAttributeLocation, size, type, normalize, stride, offset)
- 
-    // set the resolution
-    gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
- 
-    // set the color
-    gl.uniform4fv(colorUniformLocation, color);
+    for(i = 0; i < objects.length; i++){
+        let object = objects[i];
 
-    // Set the translation.
-    gl.uniform2fv(translationLocation, translation);
+        gl.useProgram(program);
+        gl.enableVertexAttribArray(positionAttributeLocation);
+        gl.bindBuffer(gl.ARRAY_BUFFER, object.buffer);
+        if(!object.init){
+            setRectangle(gl, object.translation[0], object.translation[1], object.width, object.height);
+            object.init = true;
+        }
+        gl.vertexAttribPointer(
+        positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+        // set the resolution
+        gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
 
-    // Set the rotation.
-    gl.uniform2fv(rotationLocation, rotation);
- 
-    // Draw the rectangle.
-    var primitiveType = gl.TRIANGLES;
-    var offset = 0;
-    var count = 6;
-    gl.drawArrays(primitiveType, offset, count);
+        // set the color
+        gl.uniform4fv(colorUniformLocation, object.color);
+
+        // Set the translation.
+        gl.uniform2fv(translationLocation, object.translation);
+
+        // Set the rotation.
+        gl.uniform2fv(rotationLocation, object.rotation);
+    
+        // Draw the rectangle.
+        var primitiveType = gl.TRIANGLES;
+        var offset = 0;
+        var count = 6;
+        gl.drawArrays(primitiveType, offset, count);
+
+    }
+
   }
  
 // Fills the buffer with the values that define a rectangle.
@@ -233,11 +217,10 @@ function setRectangle(gl, x, y, width, height) {
      x1, y2,
      x1, y2,
      x2, y1,
-     x2, y2]), gl.STATIC_DRAW);
+     x2, y2]), gl.DYNAMIC_DRAW);
 }
 
 function setup(gl) {
-
              // Grab C++ code..?
     var vertexShaderSource = document.querySelector("#vertex-shader-2d").text,
         fragmentShaderSource = document.querySelector("#fragment-shader-2d").text,
@@ -245,7 +228,6 @@ function setup(gl) {
         fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource),
         program = createProgram(gl, vertexShader, fragmentShader),
         positionAttributeLocation = gl.getAttribLocation(program, "a_position"),
-        positionBuffer = gl.createBuffer(),
         resolutionUniformLocation = gl.getUniformLocation(program, "u_resolution"),
         colorUniformLocation = gl.getUniformLocation(program, "u_color"),
         translationLocation = gl.getUniformLocation(program, "u_translation"),
@@ -253,35 +235,9 @@ function setup(gl) {
 
         /* webglUtils. */
         resizeCanvasToDisplaySize(gl.canvas);
-
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-        // Clear the canvas
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
-
-        // Tell it to use our program (pair of shaders)
-        gl.useProgram(program);
-
-        // set the resolution
-        gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
-
-        gl.enableVertexAttribArray(positionAttributeLocation);
-
-        // Bind the position buffer.
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
-        // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
-        var size = 2;          // 2 components per iteration
-        var type = gl.FLOAT;   // the data is 32bit floats
-        var normalize = false; // don't normalize the data
-        var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
-        var offset = 0;        // start at the beginning of the buffer
-        gl.vertexAttribPointer(
-            positionAttributeLocation, size, type, normalize, stride, offset);
-
         return {program, positionAttributeLocation, resolutionUniformLocation, colorUniformLocation, translationLocation, rotationLocation};
-
 }
 
 
